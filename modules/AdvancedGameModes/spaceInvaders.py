@@ -63,9 +63,10 @@ SHOP_ITEMS = [
     {"name": "Laser Power", "desc": "Extra laser damage for 15s", "cost": 10, "type": "laser"},
     {"name": "Extra Life", "desc": "Gain +10 life", "cost": 16, "type": "life"},
     {"name": "Extra Ammo", "desc": "+100 ammo", "cost": 20, "type": "ammo"},
-    {"name": "Ammo Bonus", "desc": "+10 ammo per answer for 1 minute", "cost": 15, "type": "ammo_bonus"},
+    {"name": "Ammo Bonus", "desc": "+10 ammo / answer for 1 min", "cost": 15, "type": "ammo_bonus"},
     {"name": "Shield", "desc": "Invulnerable for 15s", "cost": 20, "type": "shield"},
     {"name": "Auto-Fire", "desc": "Auto-shoot for 10s", "cost": 6, "type": "autofire"},
+    {"name": "Machine-Fire", "desc": "Machine gun for 10s", "cost": 6, "type": "machinefire"},
 ]
 
 
@@ -179,6 +180,7 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
     question_index = 0
     total_questions = len(questionList)
     kill_currency = 0
+    can_shoot = True
     
     starfield = StarField(SCREEN_WIDTH, SCREEN_HEIGHT, layers=2, density=0.0005)
     
@@ -217,7 +219,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
     explosion_sound.set_volume(v)
     hit.set_volume(v)
     strongCannonFire.set_volume(min(v * 1.5, 1))
-
     
     player_img = pygame.transform.smoothscale(player_img, (player_width, player_height))
     player_laser_img = pygame.transform.smoothscale(player_laser_img, (14, 48))
@@ -286,7 +287,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
             life = random.randint(300, 900)
             size = random.randint(2, 5)
             particles.append({"x": x, "y": y, "vx": vel[0], "vy": vel[1], "life": life, "born": pygame.time.get_ticks(), "size": size, "color": color})
-
     
     def render_fit_text(surface, text, base_size, color, max_width, pos):
         size = base_size
@@ -390,6 +390,8 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
                                 set_effect("shield", True, 15000)
                             elif item["type"] == "autofire":
                                 set_effect("autofire", True, 10000)
+                            elif item["type"] == "machinefire":
+                                set_effect("machinefire", True, 10000)
                             running_shop = False
                             break
                     if event.key == K_ESCAPE:
@@ -416,6 +418,8 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
                                     set_effect("shield", True, 15000)
                                 elif item["type"] == "autofire":
                                     set_effect("autofire", True, 15000)
+                                elif item["type"] == "machinefire":
+                                    set_effect("machinefire", True, 10000)
                                 running_shop = False
                                 break
 
@@ -429,7 +433,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
         user_answer = None
         answerOptions = [current_question.correctAnswer] + current_question.wrongAnswers
         random.shuffle(answerOptions)
-
         
         buttons = []
         btn_w, btn_h = 420, 30
@@ -438,7 +441,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
         for idx, answer in enumerate(answerOptions):
             button = Button(f"{idx + 1}. {answer}", (base_x, base_y + idx * (btn_h + 12)), btn_w, btn_h, WHITE)
             buttons.append(button)
-
         
         while user_answer is None:
             starfield.update_and_draw(screen, dt=1)
@@ -449,25 +451,21 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
             panel_w, panel_h = min(860, SCREEN_WIDTH - 80), 500 + 10*len(answerOptions)
             panel = pygame.Rect((SCREEN_WIDTH-panel_w)//2, (SCREEN_HEIGHT-panel_h)//2, panel_w, panel_h)
             draw_rounded_panel(screen, panel, (18, 24, 48, 240), border_color=NEON_A, border_width=3, radius=20)
-
             
             title_font = pygame.font.Font(None, 36)
             question_font = pygame.font.Font(None, 28)
             title_surf = title_font.render("Question", True, HUD_TEXT)
             screen.blit(title_surf, (panel.x + 28, panel.y + 18))
-
             
             wrap_w = panel_w - 56
             q_lines = wrap_text(current_question.question, question_font, wrap_w)
             for i, line in enumerate(q_lines[:4]):  
                 surf = question_font.render(line, True, HUD_SECONDARY)
                 screen.blit(surf, (panel.x + 28, panel.y + 64 + i * 30))
-
             
             for button in buttons:
                 button.draw(screen, BUTTON_COLOUR, border_radius=5)
                 pygame.draw.rect(screen, (30, 110, 160), button.rect, 2, border_radius=12)
-
             
             hint_font = pygame.font.Font(None, 20)
             hint = hint_font.render("Click an answer or press 1-9. Cancel to skip.", True, HUD_SECONDARY)
@@ -500,22 +498,19 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
             return True
         return False
 
-    
     button_answer = Button("Answer Question", (SCREEN_WIDTH // 2 + 325, SCREEN_HEIGHT // 2 + 190), 300, 50, WHITE)
     button_shop = Button("Shop", (SCREEN_WIDTH // 2 + 325, SCREEN_HEIGHT // 2 + 250), 300, 50, WHITE)
     button_go_back = Button("Main Menu", (SCREEN_WIDTH // 2 + 350, SCREEN_HEIGHT // 2 + 310), 250, 40, WHITE)
     button_leave = Button("Quit", (SCREEN_WIDTH // 2 + 350, SCREEN_HEIGHT // 2 + 360), 250, 40, WHITE)
 
-    can_shoot = True
     auto_fire_timer = 0
+    machine_fire_timer = 0
     clock = pygame.time.Clock()
-
     
     while running and lives > 0:
         dt = clock.tick(60)
         screen.fill(DEEP_SPACE)
         starfield.update_and_draw(screen, dt)
-
         
         hud_rect = pygame.Rect(24, 10, 700, 68)
         hud_surf = pygame.Surface((hud_rect.w, hud_rect.h), pygame.SRCALPHA)
@@ -536,7 +531,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
             color = NEON_A if remain > 0 else (160, 160, 160)
             display_message(f"{fx} ({remain}s)", yfx, 30, color, x_position=xfx)
             yfx += 28
-
         
         button_answer.draw(screen, BUTTON_COLOUR)
         button_shop.draw(screen, BUTTON_COLOUR)
@@ -544,13 +538,11 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
         button_leave.draw(screen, BUTTON_COLOUR)
         for btn in (button_answer, button_shop, button_go_back, button_leave):
             pygame.draw.rect(screen, (18, 110, 160), btn.rect, 1, border_radius=12)
-
         
         if get_effect("shield", False):
             s = pygame.Surface((player_width+32, player_height+32), pygame.SRCALPHA)
             pygame.draw.ellipse(s, (80, 220, 255, 80), s.get_rect())
             screen.blit(s, (player_x-16, player_y-16), special_flags=pygame.BLEND_ADD)
-
         
         numAliens = 0
         max_alien_y = -float('inf')
@@ -596,7 +588,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
 
                 if alien["y"] > max_alien_y:
                     max_alien_y = alien["y"]
-
         
         for projectile in projectiles[:]:
             pygame.draw.rect(screen, NEON_A, (projectile["x"], projectile["y"], 4, 18))
@@ -604,7 +595,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
             projectile["y"] -= projectile_speed * (1 + get_effect("speed", 0) / 10)
             if projectile["y"] < -10:
                 projectiles.remove(projectile)
-
         
         for alien_projectile in alien_projectiles[:]:
             col = alien_projectile.get("color", (255, 255, 255))
@@ -621,7 +611,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
                         lives -= 1
                 else:
                     alien_projectiles.remove(alien_projectile)
-
         
         for alien in aliens:
             if not alien["alive"]:
@@ -656,7 +645,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
                         spawn_particles(projectile["x"], projectile["y"], count=8, color=(255,220,140), speed=1.4)
                     if projectile in projectiles:
                         projectiles.remove(projectile)
-
         
         for explosion in explosions[:]:
             elapsed = pygame.time.get_ticks() - explosion["start_time"]
@@ -674,7 +662,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
                 exp_img_scaled = pygame.transform.smoothscale(explosion_img, (size, size))
                 screen.blit(exp_img_scaled, (explosion["x"] - size // 2, explosion["y"] - size // 2), special_flags=pygame.BLEND_ADD)
             except Exception:
-                
                 surf = pygame.Surface((size, size), pygame.SRCALPHA)
                 pygame.draw.circle(surf, (255, 200, 80, int(160 * (1 - abs(0.5-prog)*2))), (size//2, size//2), size//2)
                 screen.blit(surf, (explosion["x"] - size // 2, explosion["y"] - size // 2), special_flags=pygame.BLEND_ADD)
@@ -683,7 +670,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
                 alpha_ring = int(80 * (1 - abs(0.5-prog)*2))
                 pygame.draw.circle(ring, (255, 220, 100, alpha_ring), (size, size), int(size*0.8), width=6)
                 screen.blit(ring, (explosion["x"] - size, explosion["y"] - size), special_flags=pygame.BLEND_ADD)
-
         
         for p in particles[:]:
             age = pygame.time.get_ticks() - p["born"]
@@ -695,8 +681,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
             fade = 1.0 - age / p["life"]
             col = (int(p["color"][0] * fade), int(p["color"][1] * fade), int(p["color"][2] * fade))
             pygame.draw.circle(screen, col, (int(p["x"]), int(p["y"])), max(1, int(p["size"] * fade)))
-
-        
         
         px_gx = player_x + player_width // 2 - player_glow.get_width() // 2
         px_gy = player_y + player_height // 2 - player_glow.get_height() // 2
@@ -708,7 +692,6 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
             pygame.display.update()
             pygame.time.wait(2000)
             break
-
         
         keys = pygame.key.get_pressed()
         move_speed = get_effect("speed", 5)
@@ -716,6 +699,21 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
             player_x -= move_speed
         if keys[K_RIGHT] and player_x < SCREEN_WIDTH - player_width:
             player_x += move_speed
+
+        if keys[K_SPACE] and ammo > 0 and not get_effect("autofire", False):
+            if get_effect("machinefire", False):
+                machine_fire_timer +=1
+                if machine_fire_timer > 10:
+                    if keys[K_SPACE]:
+                        cannonFire.play()
+                        projectiles.append({"x": player_x + player_width // 2, "y": player_y})
+                        ammo -= 1
+                        machine_fire_timer = 0
+            if can_shoot:
+                cannonFire.play()
+                projectiles.append({"x": player_x + player_width // 2, "y": player_y})
+                ammo -= 1
+                can_shoot = False
 
         if get_effect("autofire", False) and ammo > 0:
             auto_fire_timer += 1
@@ -725,10 +723,12 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
                 ammo -= 1
                 auto_fire_timer = 0
 
-        
         for event in pygame.event.get():
             if event.type == QUIT:
                 quit()
+            if event.type == KEYUP:
+                if event.key == K_SPACE:
+                    can_shoot = True
             if event.type == MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
                 if button_answer.is_clicked(pos):
@@ -742,19 +742,9 @@ def spaceInvaders(questionList, titleofquiz, doCountdown, doInstructions, v):
                         continue
                 elif button_leave.is_clicked(pos):
                     quit()
-            if event.type == KEYDOWN:
-                if event.key == K_SPACE and can_shoot and ammo > 0 and not get_effect("autofire", False):
-                    cannonFire.play()
-                    projectiles.append({"x": player_x + player_width // 2, "y": player_y})
-                    ammo -= 1
-                    can_shoot = False
-            if event.type == KEYUP:
-                if event.key == K_SPACE:
-                    can_shoot = True
 
         pygame.display.update()
 
-    
     if lives <= 0 or (question_index >= total_questions and all(alien["alive"] for alien in aliens)) or max_alien_y + alien_height >= player_y + player_height // 2:
         explosion_sound.play()
         screen.fill(DEEP_SPACE)

@@ -248,10 +248,10 @@ Engage with QuizMaster, where creating and playing quizzes is fun and interactiv
 
 ## Future Work
 
-- More methods of answering questions
+- More methods of answering questions (ie: not just multiple choice)
 - Adding pictures to questions
 - More user-friendly method of installing the game
 - Multiplayer option
 - ~~Different game modes~~
-- Web app version
+- Web app version (in progress)
 - Add links to external sources
